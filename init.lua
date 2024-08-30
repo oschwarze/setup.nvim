@@ -57,6 +57,7 @@ if not vim.loop.fs_stat(lazypath) then
     lazypath,
   }
 end
+
 vim.opt.rtp:prepend(lazypath)
 
 -- NOTE: Here is where you install your plugins.
@@ -149,15 +150,15 @@ require('lazy').setup({
       end,
     },
   },
-
-  {
+  { "catppuccin/nvim", name = "catppuccin", priority = 1000,},
+  --{
     -- Theme inspired by Atom
-    'navarasu/onedark.nvim',
-    priority = 1000,
-    config = function()
-      vim.cmd.colorscheme 'onedark'
-    end,
-  },
+  --  'navarasu/onedark.nvim',
+  --  priority = 1000,
+  --  config = function()
+   --   vim.cmd.colorscheme 'onedark'
+    --end,
+  --  },
 
   {
     -- Set lualine as statusline
@@ -165,8 +166,8 @@ require('lazy').setup({
     -- See `:help lualine.txt`
     opts = {
       options = {
-        icons_enabled = false,
-        theme = 'onedark',
+        icons_enabled = true,
+        theme = 'auto',
         component_separators = '|',
         section_separators = '',
       },
@@ -213,6 +214,7 @@ require('lazy').setup({
       'nvim-treesitter/nvim-treesitter-textobjects',
     },
     build = ':TSUpdate',
+    
   },
 
   -- NOTE: Next Step on Your Neovim Journey: Add/Configure additional "plugins" for kickstart
@@ -227,8 +229,8 @@ require('lazy').setup({
   --    Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --
   --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
-  -- { import = 'custom.plugins' },
-}, {})
+  { import = 'custom.plugins' },
+}, {performance = {rtp ={paths = {'C:\\Program Files\\Neovim\\share\\nvim-qt\\runtime\\'}}}})
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -280,6 +282,7 @@ vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 -- Remap for dealing with word wrap
 vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
+vim.keymap.set('v', 'y', "ygv<Esc>", { expr = false, silent = true }) -- Visual mode yank places cursor at end of yank
 
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`
@@ -319,7 +322,7 @@ vim.keymap.set('n', '<leader>/', function()
   })
 end, { desc = '[/] Fuzzily search in current buffer' })
 
-vim.keymap.set('n', '<leader>gf', require('telescope.builtin').git_files, { desc = 'Search [G]it [F]iles' })
+vim.keymap.set('n', '<leader>sG', require('telescope.builtin').git_files, { desc = 'Search [G]it [F]iles' })
 vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
 vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
@@ -333,12 +336,26 @@ vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = 
 vim.defer_fn(function()
   require('nvim-treesitter.configs').setup {
     -- Add languages to be installed here that you want installed for treesitter
-    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim', 'bash' },
+    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim', 'bash','markdown','markdown_inline','latex'},
 
     -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
     auto_install = false,
-
-    highlight = { enable = true },
+    matchup = { enable = true, },
+    highlight = { enable = true,
+    additional_vim_regex_highlighting = {"markdown"},
+    disable = function(lang,buf)
+        if lang == 'latex' then
+          return true
+        else
+          return false
+        end
+        --print(returns,vim.api.nvim_buf_get_option(buf,'filetype') )
+        if lang == "latex" and vim.api.nvim_buf_get_option(buf,'filetype') ~= 'markdow' then
+          return true
+        end
+        return false
+        end,
+           },
     indent = { enable = true },
     incremental_selection = {
       enable = true,
@@ -399,7 +416,7 @@ end, 0)
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
+--vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostics list' })
 
 -- [[ Configure LSP ]]
@@ -448,14 +465,21 @@ local on_attach = function(_, bufnr)
 end
 
 -- document existing key chains
-require('which-key').register {
-  ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
-  ['<leader>d'] = { name = '[D]ocument', _ = 'which_key_ignore' },
-  ['<leader>g'] = { name = '[G]it', _ = 'which_key_ignore' },
-  ['<leader>h'] = { name = 'More git', _ = 'which_key_ignore' },
-  ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
-  ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
-  ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
+require('which-key').add {
+  {'<leader>c', group = '[C]ode'},
+  {'<leader>c_', hidden = true},
+  {'<leader>d', group = '[D]ocument'},
+  {'<leader>d_', hidden = true},
+  {'<leader>g', group = '[G]it'},
+  {'<leader>g_', hidden = true},
+  {'<leader>h', group = 'More git'},
+  {'<leader>h_', hidden = true},
+  {'<leader>r', group = '[R]ename'},
+  {'<leader>r_', hidden = true},
+  {'<leader>s', group = '[S]earch'},
+  {'<leader>s_', hidden = true},
+  {'<leader>w', group = '[W]orkspace'},
+  {'<leader>w_', hidden = true},
 }
 
 -- mason-lspconfig requires that these setup functions are called in this order
@@ -472,12 +496,15 @@ require('mason-lspconfig').setup()
 --  If you want to override the default filetypes that your language server will attach to you can
 --  define the property 'filetypes' to the map in question.
 local servers = {
-  -- clangd = {},
+   clangd = {}, -- C 
   -- gopls = {},
-  -- pyright = {},
+   pyright = {}, --python
   -- rust_analyzer = {},
   -- tsserver = {},
   -- html = { filetypes = { 'html', 'twig', 'hbs'} },
+  --texlab = {}, -- latex
+  --ltex = { fieltype = {'markdown'}}, -- latex but can also do markdown
+  marksman = {}, -- markdown
 
   lua_ls = {
     Lua = {
@@ -516,8 +543,15 @@ mason_lspconfig.setup_handlers {
 -- See `:help cmp`
 local cmp = require 'cmp'
 local luasnip = require 'luasnip'
-require('luasnip.loaders.from_vscode').lazy_load()
-luasnip.config.setup {}
+require('luasnip.loaders.from_vscode').lazy_load{ exclude = {"latex","markdown","tex"}} --load friendly snippets, but not for latex because they suck
+require('luasnip.loaders.from_lua').lazy_load({paths =  {"~/.config/nvim/LuaSnip/"}})
+luasnip.config.setup {
+build = "make install_jsregex",
+enable_autosnippets = true -- make autosnippets work
+}
+luasnip.filetype_extend('markdown',{'tex','latex'}) --add tex snippets to markdown
+vim.api.nvim_create_user_command('LuaSnipEdit', 'lua require("luasnip.loaders").edit_snippet_files()',{})
+
 
 cmp.setup {
   snippet = {
@@ -526,8 +560,8 @@ cmp.setup {
     end,
   },
   mapping = cmp.mapping.preset.insert {
-    ['<C-n>'] = cmp.mapping.select_next_item(),
-    ['<C-p>'] = cmp.mapping.select_prev_item(),
+    ['<C-j>'] = cmp.mapping.select_next_item(),
+    ['<C-k>'] = cmp.mapping.select_prev_item(),
     ['<C-d>'] = cmp.mapping.scroll_docs(-4),
     ['<C-f>'] = cmp.mapping.scroll_docs(4),
     ['<C-Space>'] = cmp.mapping.complete {},
@@ -536,17 +570,21 @@ cmp.setup {
       select = true,
     },
     ['<Tab>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_next_item()
-      elseif luasnip.expand_or_locally_jumpable() then
+      if luasnip.expand_or_locally_jumpable() and cmp.get_active_entry() == nil then
         luasnip.expand_or_jump()
+      elseif cmp.visible() then
+        cmp.select_next_item()
       else
         fallback()
       end
     end, { 'i', 's' }),
     ['<S-Tab>'] = cmp.mapping(function(fallback)
       if cmp.visible() then
-        cmp.select_prev_item()
+        if cmp.get_active_entry() == nil then
+          cmp.select_next_item()
+        else
+          cmp.select_prev_item()
+        end
       elseif luasnip.locally_jumpable(-1) then
         luasnip.jump(-1)
       else
@@ -557,8 +595,79 @@ cmp.setup {
   sources = {
     { name = 'nvim_lsp' },
     { name = 'luasnip' },
+    { name = 'obsidian'},
+    { name = 'obsidian_new'},
   },
 }
+
+
+
+-- set cwd to home if it spawned in the default directory
+if vim.fn.getcwd() == 'C:\\Program Files\\Neovim\\bin' then
+   vim.api.nvim_set_current_dir('~')
+end
+
+
+
+-- [[Neotree Keymaps]]
+vim.keymap.set('n', '<leader>E', function () vim.cmd('Neotree toggle current reveal_force_cwd') end , { desc = 'Open file tree.' })
+vim.keymap.set('n', '<leader>e', function () vim.cmd('Neotree toggle reveal_force_cwd') end , { desc = 'Open file tree.' })
+vim.keymap.set('n', '<leader>b', function () vim.cmd('Neotree toggle show buffers right') end, { desc = 'Open Buffers.' })
+
+vim.keymap.set("n", "gf", function()
+  if require("obsidian").util.cursor_on_markdown_link() then
+    return "<cmd>ObsidianFollowLink<CR>"
+  else
+    return "gf"
+  end
+end, { noremap = false, expr = true, desc = 'Open file under cursor'})
+
+
+-- [[ Quick Settings keymaps They all start with <leader>_  ]]
+vim.keymap.set('n', '<leader>_s', function() vim.cmd('Neotree float dir=C:/Users/olisc/.config/nvim/<CR>') end,{desc = "Open snippets directory."})
+
+
+vim.opt.conceallevel = 1  -- set conceal level to something that allows conceal of caracters
+
+-- Setting how folding should look. This drops the trailing ...... symbols
+vim.opt.fillchars="fold: "
+
+
+-- setup must be called before loading
+vim.cmd.colorscheme "catppuccin"
+
+--setup syntax speed improvements
+vim.opt.cursorline = false
+vim.opt.cursorcolumn = false
+
+
+-- Spelling keymap: pressing Ctrl-l in insert mode fixes the last spelling wihtout moving the cursor
+vim.keymap.set('i', '<C-l>','<c-g>u<Esc>[s1z=`]a<c-g>u')
+
+-- keymap for remapping Ctrl-] for jumping tags as itis impossible on western keyboards
+vim.keymap.set('n', '<C-¨>','<C-]>')
+vim.keymap.set('n', '<C-å>','<C-[>')
+
+
+-- autocomand for setting folding using treesitter when available
+--[[
+vim.api.nvim_create_autocmd({ "FileType" }, {
+  callback = function()
+    if require("nvim-treesitter.parsers").has_parser() then
+	local buf = vim.api.nvim_get_current_buf()
+	local highlighter = require("vim.treesitter.highlighter")
+	if highlighter.active[buf] then
+	      vim.opt.foldmethod = "expr"
+	      vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+	end
+    end
+  end,
+})
+--]]
+
+-- set vimtext folding before loading the plugin This should not break even if vimtex is not installed, as we are merely defining variables here
+--vim.cmd([[ let g:vimtex_fold_enabled=1]])
+--vim.cmd([[ let g:vimtex_fold_manual=1]])
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
